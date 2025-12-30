@@ -34,8 +34,8 @@ void WeaponLoader::startRequest()
     
     qDebug() << "Loading weapons from API..." << (m_retryCount > 0 ? QString("(retry %1/%2)").arg(m_retryCount).arg(MAX_RETRIES) : "");
     
-    // Load weapons from your API
-    QNetworkRequest request(QUrl("https://godroll.tv/api/weapons/list"));
+    // Load weapons from your API with source=app to get perkColumns data
+    QNetworkRequest request(QUrl("https://godroll.tv/api/weapons/list?source=app"));
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     
     m_currentReply = m_networkManager->get(request);

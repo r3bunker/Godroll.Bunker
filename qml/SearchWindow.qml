@@ -398,6 +398,59 @@ Rectangle {
                     }
                 }
 
+                // Trait filter badges
+                Repeater {
+                    model: searchModel.activeTraitFilters
+                    delegate: Rectangle {
+                        required property var modelData
+                        property int colorIdx: modelData.colorIndex
+                        property color badgeColor: {
+                            switch(colorIdx % 4) {
+                                case 0: return Qt.rgba(0, 188/255, 212/255, 0.15);  // teal
+                                case 1: return Qt.rgba(255/255, 152/255, 0, 0.15);  // orange
+                                case 2: return Qt.rgba(233/255, 30/255, 99/255, 0.15);  // pink
+                                case 3: return Qt.rgba(139/255, 195/255, 74/255, 0.15);  // green
+                                default: return Qt.rgba(0, 188/255, 212/255, 0.15);
+                            }
+                        }
+                        property color borderColor: {
+                            switch(colorIdx % 4) {
+                                case 0: return "#4dd0e1";  // teal
+                                case 1: return "#ffb74d";  // orange
+                                case 2: return "#f48fb1";  // pink
+                                case 3: return "#aed581";  // green
+                                default: return "#4dd0e1";
+                            }
+                        }
+                        property color textColor: borderColor
+                        
+                        width: traitText.width + 12
+                        height: resultCountBadge.height
+                        radius: 4
+                        color: badgeColor
+
+                        Text {
+                            id: traitText
+                            anchors.centerIn: parent
+                            text: modelData.name
+                            font.family: searchWindow.mainFont
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            color: parent.textColor
+                        }
+                        
+                        // Bottom border only
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: parent.width
+                            height: 2
+                            radius: 1
+                            color: parent.borderColor
+                        }
+                    }
+                }
+
                 // Result count badge
                 Rectangle {
                     id: resultCountBadge
@@ -804,6 +857,26 @@ Rectangle {
             font.pixelSize: 13
             color: "#999999"
             horizontalAlignment: Text.AlignHCenter
+        }
+        
+        // Update available hint
+        Text {
+            Layout.fillWidth: true
+            Layout.topMargin: -8
+            visible: updateChecker.updateAvailable
+            text: "Update Available (v" + updateChecker.latestVersion + ")"
+            font.family: searchWindow.mainFont
+            font.pixelSize: 12
+            color: "#4dd0e1"
+            horizontalAlignment: Text.AlignHCenter
+            
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    updateDialog.show()
+                }
+            }
         }
     }
 

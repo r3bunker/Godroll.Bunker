@@ -15,6 +15,7 @@
 #include <QDirIterator>
 #include <QTextStream>
 #include <QtConcurrent>
+#include <QDateTime>
 
 const QString UpdateChecker::GITHUB_API_URL = "https://api.github.com/repos/%1/releases/latest";
 const QString UpdateChecker::GITHUB_REPO = "bugrakaan/godroll.tv-app";
@@ -27,8 +28,11 @@ UpdateChecker::UpdateChecker(QObject *parent)
     connect(m_networkManager, &QNetworkAccessManager::finished,
             this, &UpdateChecker::onNetworkReply);
     
-    // Check if we just updated from a previous version
+    // Load last check time from settings
     QSettings settings("Godroll.tv", "GodrollLauncher");
+    m_lastCheckTime = settings.value("lastUpdateCheckTime", 0).toLongLong();
+    
+    // Check if we just updated from a previous version
     m_updatedToVersion = settings.value("updatedToVersion", "").toString();
     if (!m_updatedToVersion.isEmpty() && m_updatedToVersion == m_currentVersion) {
         // We just updated! Emit signal after a short delay (let QML load first)
@@ -51,6 +55,11 @@ void UpdateChecker::checkForUpdates()
     m_checking = true;
     emit checkingChanged();
     
+    // Update last check time
+    m_lastCheckTime = QDateTime::currentSecsSinceEpoch();
+    QSettings settings("Godroll.tv", "GodrollLauncher");
+    settings.setValue("lastUpdateCheckTime", m_lastCheckTime);
+    
     QString apiUrl = GITHUB_API_URL.arg(GITHUB_REPO);
     QUrl url(apiUrl);
     QNetworkRequest request(url);
@@ -61,6 +70,25 @@ void UpdateChecker::checkForUpdates()
     qDebug() << "Checking for updates at:" << apiUrl;
     
     m_networkManager->get(request);
+}
+
+void UpdateChecker::checkForUpdatesIfNeeded()
+{
+    // Check only if 4+ hours (14400 seconds) have passed since last check
+    const qint64 CHECK_INTERVAL = 4 * 60 * 60;  // 4 hours in seconds
+    qint64 currentTime = QDateTime::currentSecsSinceEpoch();
+    qint64 timeSinceLastCheck = currentTime - m_lastCheckTime;
+    
+    if (timeSinceLastCheck >= CHECK_INTERVAL) {
+        qDebug() << "Update check needed, last check was" << (timeSinceLastCheck / 3600) << "hours ago";
+        checkForUpdates();
+    } else {
+        qDebug() << "Skipping update check, only" << (timeSinceLastCheck / 60) << "minutes since last check";
+        // If we already know there's an update available, emit the signal
+        if (m_updateAvailable) {
+            emit updateCheckComplete(true);
+        }
+    }
 }
 
 void UpdateChecker::onNetworkReply(QNetworkReply *reply)

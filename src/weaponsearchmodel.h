@@ -7,6 +7,7 @@
 #include <QJsonObject>
 #include <QString>
 #include <QStringList>
+#include <QVariantList>
 
 class WeaponSearchModel : public QAbstractListModel
 {
@@ -16,6 +17,7 @@ class WeaponSearchModel : public QAbstractListModel
     Q_PROPERTY(bool autoShowLatestSeason READ autoShowLatestSeason WRITE setAutoShowLatestSeason NOTIFY autoShowLatestSeasonChanged)
     Q_PROPERTY(bool openInPWA READ openInPWA WRITE setOpenInPWA NOTIFY openInPWAChanged)
     Q_PROPERTY(QStringList activeSourceFilters READ activeSourceFilters NOTIFY activeSourceFiltersChanged)
+    Q_PROPERTY(QVariantList activeTraitFilters READ activeTraitFilters NOTIFY activeTraitFiltersChanged)
 
 public:
     enum WeaponRoles {
@@ -54,6 +56,7 @@ public:
     void setOpenInPWA(bool open);
 
     QStringList activeSourceFilters() const { return m_activeSourceFilters; }
+    QVariantList activeTraitFilters() const { return m_activeTraitFilters; }
 
     void setWeapons(const QJsonArray &weapons);
 
@@ -66,6 +69,7 @@ signals:
     void autoShowLatestSeasonChanged();
     void openInPWAChanged();
     void activeSourceFiltersChanged();
+    void activeTraitFiltersChanged();
     void weaponsLoaded();
 
 private:
@@ -80,6 +84,11 @@ private:
     // Weapon name helpers
     QString getBaseWeaponName(const QString &name) const;  // Removes (Adept), (Harrowed), etc.
     bool isAdeptWeapon(const QJsonObject &weapon) const;   // Checks if weapon is adept (API field or name suffix)
+    
+    // Trait helpers
+    void buildTraitList();  // Build unique trait list from all weapons
+    QString findBestTraitMatch(const QString &partial) const;  // Fuzzy match trait name
+    int getTraitColumn(const QString &traitName, const QJsonObject &weapon) const;  // Get column number for trait
 
     QJsonArray m_allWeapons;
     QJsonArray m_filteredWeapons;
@@ -89,6 +98,8 @@ private:
     bool m_autoShowLatestSeason = true;
     bool m_openInPWA = true;      // Open links in Chrome PWA mode (default: true)
     QStringList m_activeSourceFilters;  // Currently active source filter display names
+    QVariantList m_activeTraitFilters;  // Currently active trait filters [{name: "Firefly", column: 3}, ...]
+    QStringList m_allTraits;  // All unique trait names from weapons
 };
 
 #endif // WEAPONSEARCHMODEL_H

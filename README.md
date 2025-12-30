@@ -21,7 +21,17 @@ A desktop launcher for quick Destiny 2 weapon search on [Godroll.tv](https://god
 - **`-a`** - Show only Adept/Harrowed/Timelost weapons (or use "adept" keyword)
 - **`-e`** - Show only Exotic weapons (or use "exotic" keyword)
 - **`-s <source>`** - Filter by source (raid, dungeon, activity, etc.)
+- **`-t <perk>`** - Filter by perk/trait (e.g., `-t firefly`, `-t kc` for Kill Clip)
+- **Damage Types** - Use `solar`, `arc`, `void`, `stasis`, `strand`, `kinetic` keywords
+- **Ammo Types** - Use `primary`, `special`, `heavy` keywords
 - **Combined** - Use together like `-!*h` or `-h -! -*`
+
+### Perk Aliases
+Common community shorthand is supported for trait search:
+- `kc` → Kill Clip, `mkc` → Multikill Clip
+- `ff` → Feeding Frenzy, `tt` → Triple Tap
+- `ea` → Envious Arsenal, `recon` → Reconstruction
+- `bns` → Bait and Switch, `demo` → Demolitionist
 
 ### Keyboard Shortcuts
 - **`Alt + G`** - Toggle launcher (works globally)
@@ -35,11 +45,13 @@ A desktop launcher for quick Destiny 2 weapon search on [Godroll.tv](https://god
 - Weapon icons with damage type and ammo indicators
 - Animated holofoil badge for holofoil weapons
 - Season information with expansion names
+- Active filter badges (source filters, trait filters)
 - System tray integration
 - Auto-start with Windows option
 
 ### Auto-Updater
-- Automatic update check on startup
+- Automatic update check on startup and every 4 hours
+- "Update Available" hint in search window (click to open dialog)
 - Manual "Check for Updates" from tray menu
 - One-click download and install
 - Automatic ZIP extraction and file replacement
@@ -113,6 +125,23 @@ exotic hand cannon    → Exotic Hand Cannons
 -s iron               → Iron Banner weapons
 -s duality            → Duality dungeon weapons
 -s crotas             → Crota's End weapons
+```
+
+**Perk/Trait Filter**
+```
+-t firefly            → Weapons with Firefly perk
+-t kc                 → Weapons with Kill Clip (alias)
+-t recon ea           → Weapons with Reconstruction AND Envious Arsenal
+void shotgun -t one   → Void Shotguns with One for All
+-t destab -e          → Exotic weapons with Destabilizing Rounds
+```
+
+**Damage & Ammo Type Filter**
+```
+solar sniper          → Solar Snipers
+void heavy            → Void Heavy weapons
+strand primary        → Strand Primary weapons
+arc special           → Arc Special weapons
 ```
 
 ### System Tray

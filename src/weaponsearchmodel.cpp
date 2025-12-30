@@ -1,4 +1,5 @@
 #include "weaponsearchmodel.h"
+#include "perkaliases.h"
 #include <QDesktopServices>
 #include <QUrl>
 #include <QSettings>
@@ -112,6 +113,9 @@ void WeaponSearchModel::setWeapons(const QJsonArray &weapons)
         }
     }
     
+    // Build trait list from all weapons
+    buildTraitList();
+    
     // Apply user preference for auto-showing latest season
     m_showLatestSeason = m_autoShowLatestSeason;
     
@@ -120,6 +124,122 @@ void WeaponSearchModel::setWeapons(const QJsonArray &weapons)
     
     // Notify that weapons are loaded
     emit weaponsLoaded();
+}
+
+// Build unique trait list from all weapons' perkColumns
+void WeaponSearchModel::buildTraitList()
+{
+    std::set<QString> uniqueTraits;
+    
+    for (const QJsonValue &value : m_allWeapons) {
+        QJsonObject weapon = value.toObject();
+        QJsonObject perkColumns = weapon["perkColumns"].toObject();
+        
+        // Iterate through all columns (1, 2, 3, 4, 7, etc.)
+        for (const QString &columnKey : perkColumns.keys()) {
+            QJsonArray perks = perkColumns[columnKey].toArray();
+            for (const QJsonValue &perkVal : perks) {
+                QString perkName = perkVal.toString().trimmed();
+                if (!perkName.isEmpty()) {
+                    uniqueTraits.insert(perkName);
+                }
+            }
+        }
+    }
+    
+    m_allTraits.clear();
+    for (const QString &trait : uniqueTraits) {
+        m_allTraits.append(trait);
+    }
+    
+    // Sort alphabetically for consistent ordering
+    std::sort(m_allTraits.begin(), m_allTraits.end(), [](const QString &a, const QString &b) {
+        return a.toLower() < b.toLower();
+    });
+}
+
+// Find best matching trait name using fuzzy matching
+// First checks perk aliases, then does fuzzy matching
+QString WeaponSearchModel::findBestTraitMatch(const QString &partial) const
+{
+    if (partial.isEmpty() || m_allTraits.isEmpty()) {
+        return QString();
+    }
+    
+    QString partialLower = partial.toLower();
+    
+    // First, check if it's a known alias (highest priority)
+    if (PERK_ALIASES.contains(partialLower)) {
+        QString aliasTarget = PERK_ALIASES.value(partialLower);
+        // Verify the alias target exists in our trait list
+        for (const QString &trait : m_allTraits) {
+            if (trait.toLower() == aliasTarget.toLower()) {
+                return trait;  // Return the actual trait name from our list
+            }
+        }
+        // If alias target not found exactly, continue with fuzzy matching on the alias target
+        partialLower = aliasTarget.toLower();
+    }
+    
+    QString bestMatch;
+    int bestScore = 0;
+    
+    for (const QString &trait : m_allTraits) {
+        QString traitLower = trait.toLower();
+        
+        // Exact match - highest priority
+        if (traitLower == partialLower) {
+            return trait;
+        }
+        
+        // Starts with - very high priority
+        if (traitLower.startsWith(partialLower)) {
+            int score = 1000 + (100 - trait.length()); // Prefer shorter matches
+            if (score > bestScore) {
+                bestScore = score;
+                bestMatch = trait;
+            }
+            continue;
+        }
+        
+        // Contains - medium priority
+        if (traitLower.contains(partialLower)) {
+            int score = 500 + (100 - trait.length());
+            if (score > bestScore) {
+                bestScore = score;
+                bestMatch = trait;
+            }
+            continue;
+        }
+        
+        // Fuzzy match - lower priority
+        int fuzzy = fuzzyScore(traitLower, partialLower);
+        if (fuzzy > 400 && fuzzy > bestScore) { // Threshold for fuzzy match
+            bestScore = fuzzy;
+            bestMatch = trait;
+        }
+    }
+    
+    return bestMatch;
+}
+
+// Get the column number where a trait exists in a weapon's perkColumns
+// Returns -1 if trait not found
+int WeaponSearchModel::getTraitColumn(const QString &traitName, const QJsonObject &weapon) const
+{
+    QJsonObject perkColumns = weapon["perkColumns"].toObject();
+    QString traitLower = traitName.toLower();
+    
+    for (const QString &columnKey : perkColumns.keys()) {
+        QJsonArray perks = perkColumns[columnKey].toArray();
+        for (const QJsonValue &perkVal : perks) {
+            if (perkVal.toString().toLower() == traitLower) {
+                return columnKey.toInt();
+            }
+        }
+    }
+    
+    return -1;
 }
 
 // Helper: Get base weapon name by removing parenthetical suffixes like (Adept), (Harrowed), (Timelost)
@@ -162,10 +282,141 @@ void WeaponSearchModel::filterWeapons()
     bool adeptOnly = false;       // -a flag or "adept" keyword: show only adept/harrowed/timelost weapons
     bool exoticOnly = false;      // -e flag or "exotic" keyword: show only exotic weapons
     QStringList sourceFilters;    // -s flag: filter by source (e.g., -s gambit, -s vog)
+    QList<QPair<QString, int>> traitFilters;  // -t flag: filter by traits with column index
+    QString damageTypeFilter;     // Damage type filter: solar, arc, void, stasis, strand, kinetic
+    QString ammoTypeFilter;       // Ammo type filter: primary, special, heavy
+    
+    // Damage type keywords
+    static const QMap<QString, QString> DAMAGE_TYPES = {
+        {"solar", "Solar"},
+        {"arc", "Arc"},
+        {"void", "Void"},
+        {"stasis", "Stasis"},
+        {"strand", "Strand"},
+        {"kinetic", "Kinetic"}
+    };
+    
+    // Ammo type keywords
+    static const QMap<QString, QString> AMMO_TYPES = {
+        {"primary", "Primary"},
+        {"special", "Special"},
+        {"heavy", "Heavy"}
+    };
     
     QString queryLower = m_searchQuery.toLower().trimmed();
     
-    // Parse -s source filters first (e.g., "-s gambit", "-s vog", "-s trials")
+    // Parse -t trait filters - words after -t are trait names until we hit another flag
+    // "-t firefly headstone -e" means filter by Firefly AND Headstone, with exotic flag
+    QStringList traitTerms;
+    int traitFlagIndex = queryLower.indexOf("-t ");
+    if (traitFlagIndex != -1) {
+        // Everything after "-t " initially
+        QString traitPart = queryLower.mid(traitFlagIndex + 3).trimmed();
+        // Remove the -t and everything after from the main query (we'll add back non-trait flags)
+        queryLower = queryLower.left(traitFlagIndex).trimmed();
+        
+        // Parse trait part - handle quoted strings as single terms
+        // "bait and switch" or 'bait and switch' should be treated as one trait, not three
+        QStringList parts;
+        
+        // Match both double-quoted and single-quoted strings
+        QRegularExpression quotedPattern("[\"']([^\"']+)[\"']");
+        QRegularExpressionMatchIterator quotedMatches = quotedPattern.globalMatch(traitPart);
+        
+        // Extract quoted terms first
+        while (quotedMatches.hasNext()) {
+            QRegularExpressionMatch match = quotedMatches.next();
+            QString quotedTerm = match.captured(1).trimmed();
+            if (!quotedTerm.isEmpty()) {
+                parts.append(quotedTerm);
+            }
+        }
+        
+        // Remove quoted parts from traitPart to get remaining unquoted terms
+        QString unquotedPart = traitPart;
+        unquotedPart.remove(quotedPattern);
+        
+        // Split remaining unquoted part by spaces
+        QStringList unquotedParts = unquotedPart.split(' ', Qt::SkipEmptyParts);
+        
+        QStringList flagsToAddBack;
+        
+        for (const QString &part : unquotedParts) {
+            // Check if it looks like a flag (-e, -h, -a, -!, -*, -s)
+            // Flags are: single dash followed by flag characters
+            if (part.startsWith("-") && part.length() >= 2) {
+                // Check if it's a known flag pattern
+                QString flagChars = part.mid(1);
+                bool isFlag = true;
+                
+                // Check if all characters are valid flag chars or if it's -s
+                if (flagChars == "s" || part.startsWith("-s ")) {
+                    // Source flag - add back to query with everything after it
+                    int idx = unquotedParts.indexOf(part);
+                    for (int i = idx; i < unquotedParts.size(); ++i) {
+                        flagsToAddBack.append(unquotedParts[i]);
+                    }
+                    break;
+                }
+                
+                // Check for standard flags (!*hae)
+                for (const QChar &c : flagChars) {
+                    if (c != '!' && c != '*' && c != 'h' && c != 'a' && c != 'e') {
+                        isFlag = false;
+                        break;
+                    }
+                }
+                
+                if (isFlag) {
+                    flagsToAddBack.append(part);
+                    continue;
+                }
+            }
+            
+            // Not a flag, treat as trait term
+            // Skip lone quote characters but allow short terms like "ff", "kc"
+            QString cleanPart = part;
+            cleanPart.remove('"');  // Remove any stray double quote characters
+            cleanPart.remove('\''); // Remove any stray single quote characters
+            cleanPart = cleanPart.trimmed();
+            if (!cleanPart.isEmpty() && !parts.contains(cleanPart)) {
+                parts.append(cleanPart);
+            }
+        }
+        
+        // Now parts contains both quoted (full phrases) and unquoted terms
+        traitTerms = parts;
+        
+        // Add back any flags that were after -t
+        if (!flagsToAddBack.isEmpty()) {
+            queryLower = queryLower + " " + flagsToAddBack.join(" ");
+            queryLower = queryLower.trimmed();
+        }
+    }
+    
+    // Match partial trait names to full trait names (max 4 traits)
+    const int MAX_TRAIT_FILTERS = 4;
+    for (const QString &term : traitTerms) {
+        if (traitFilters.size() >= MAX_TRAIT_FILTERS) {
+            break; // Stop at max trait limit
+        }
+        QString matchedTrait = findBestTraitMatch(term);
+        if (!matchedTrait.isEmpty()) {
+            // Check if we already have this trait
+            bool exists = false;
+            for (const auto &pair : traitFilters) {
+                if (pair.first.toLower() == matchedTrait.toLower()) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                traitFilters.append(qMakePair(matchedTrait, -1)); // Column will be determined per weapon
+            }
+        }
+    }
+    
+    // Parse -s source filters (e.g., "-s gambit", "-s vog", "-s trials")
     // Can have multiple: "-s gambit -s trials"
     QRegularExpression sourcePattern("-s\\s+(\\S+)", QRegularExpression::CaseInsensitiveOption);
     QRegularExpressionMatchIterator sourceMatches = sourcePattern.globalMatch(queryLower);
@@ -232,6 +483,28 @@ void WeaponSearchModel::filterWeapons()
         queryLower = queryLower.replace(QRegularExpression("\\bexotic\\b"), "").trimmed();
     }
     
+    // Check for damage type keywords (solar, arc, void, stasis, strand, kinetic)
+    for (auto it = DAMAGE_TYPES.constBegin(); it != DAMAGE_TYPES.constEnd(); ++it) {
+        QString keyword = it.key();
+        QRegularExpression pattern("\\b" + keyword + "\\b", QRegularExpression::CaseInsensitiveOption);
+        if (queryLower.contains(pattern)) {
+            damageTypeFilter = it.value();
+            queryLower = queryLower.remove(pattern).simplified();
+            break;  // Only one damage type filter at a time
+        }
+    }
+    
+    // Check for ammo type keywords (primary, special, heavy)
+    for (auto it = AMMO_TYPES.constBegin(); it != AMMO_TYPES.constEnd(); ++it) {
+        QString keyword = it.key();
+        QRegularExpression pattern("\\b" + keyword + "\\b", QRegularExpression::CaseInsensitiveOption);
+        if (queryLower.contains(pattern)) {
+            ammoTypeFilter = it.value();
+            queryLower = queryLower.remove(pattern).simplified();
+            break;  // Only one ammo type filter at a time
+        }
+    }
+    
     // Build a map of source aliases to display names for active filters
     // We need to scan weapons to find matching sourceDisplayNames
     // Priority: exact match > starts-with match > contains match
@@ -296,6 +569,20 @@ void WeaponSearchModel::filterWeapons()
         emit activeSourceFiltersChanged();
     }
     
+    // Update active trait filters for QML
+    // Create variant list with name and color index based on typical column mapping
+    QVariantList traitFiltersList;
+    for (int i = 0; i < traitFilters.size(); ++i) {
+        QVariantMap traitInfo;
+        traitInfo["name"] = traitFilters[i].first;
+        traitInfo["colorIndex"] = i % 4;  // Cycle through 4 colors
+        traitFiltersList.append(traitInfo);
+    }
+    if (m_activeTraitFilters != traitFiltersList) {
+        m_activeTraitFilters = traitFiltersList;
+        emit activeTraitFiltersChanged();
+    }
+    
     // Helper lambda to check if a weapon matches the source filters
     // Uses the same priority logic: exact > starts-with > contains
     auto matchesSourceFilter = [&sourceFilters, &matchedSourceDisplayNames](const QJsonObject &weapon) -> bool {
@@ -322,13 +609,53 @@ void WeaponSearchModel::filterWeapons()
         }
         return true;
     };
+    
+    // Helper lambda to check if a weapon matches the trait filters
+    // Each trait must be in a DIFFERENT column (one perk per column rule)
+    auto matchesTraitFilter = [this, &traitFilters](const QJsonObject &weapon) -> bool {
+        if (traitFilters.isEmpty()) return true;
+        
+        QJsonObject perkColumns = weapon["perkColumns"].toObject();
+        std::set<int> usedColumns;  // Track which columns we've matched
+        
+        for (const auto &traitPair : traitFilters) {
+            QString traitName = traitPair.first.toLower();
+            bool found = false;
+            
+            // Look for this trait in any column
+            for (const QString &columnKey : perkColumns.keys()) {
+                int columnNum = columnKey.toInt();
+                
+                // Skip if this column is already used by another trait
+                if (usedColumns.find(columnNum) != usedColumns.end()) {
+                    continue;
+                }
+                
+                QJsonArray perks = perkColumns[columnKey].toArray();
+                for (const QJsonValue &perkVal : perks) {
+                    if (perkVal.toString().toLower() == traitName) {
+                        found = true;
+                        usedColumns.insert(columnNum);
+                        break;
+                    }
+                }
+                
+                if (found) break;
+            }
+            
+            if (!found) return false;  // Trait not found in any available column
+        }
+        
+        return true;
+    };
 
     // If query is empty (after removing flags), show latest season weapons with filters applied
     // The -* flag allows showing ALL weapons (not just latest season)
     // Filter flags (-h, -a, -e) when used alone should search ALL weapons
     // -! (unique) alone still shows latest season only
     bool hasFilterFlags = holofoilOnly || adeptOnly || exoticOnly;
-    bool showAllWeapons = noLimit || !sourceFilters.isEmpty() || hasFilterFlags; // -* flag, -s flag, or filter flags shows all weapons
+    bool hasDamageOrAmmoFilter = !damageTypeFilter.isEmpty() || !ammoTypeFilter.isEmpty();
+    bool showAllWeapons = noLimit || !sourceFilters.isEmpty() || !traitFilters.isEmpty() || hasFilterFlags || hasDamageOrAmmoFilter; // -* flag, -s flag, -t flag, damage/ammo type, or filter flags shows all weapons
     
     if (queryLower.isEmpty() && !showAllWeapons) {
         if (!m_showLatestSeason) {
@@ -362,6 +689,22 @@ void WeaponSearchModel::filterWeapons()
                     // Apply adept filter
                     if (adeptOnly && !isAdept) {
                         continue; // Skip non-adept weapons when adept filter is active
+                    }
+                    
+                    // Apply damage type filter
+                    if (!damageTypeFilter.isEmpty()) {
+                        QString weaponDamage = weapon["damageType"].toString();
+                        if (weaponDamage.toLower() != damageTypeFilter.toLower()) {
+                            continue;
+                        }
+                    }
+                    
+                    // Apply ammo type filter
+                    if (!ammoTypeFilter.isEmpty()) {
+                        QString weaponAmmo = weapon["ammoType"].toString();
+                        if (weaponAmmo.toLower() != ammoTypeFilter.toLower()) {
+                            continue;
+                        }
                     }
                     
                     // If uniqueByName is enabled, skip if we've seen this base name
@@ -467,9 +810,30 @@ void WeaponSearchModel::filterWeapons()
                 continue; // Skip non-adept weapons when adept filter is active
             }
             
+            // Apply damage type filter
+            if (!damageTypeFilter.isEmpty()) {
+                QString weaponDamage = weapon["damageType"].toString();
+                if (weaponDamage.toLower() != damageTypeFilter.toLower()) {
+                    continue;
+                }
+            }
+            
+            // Apply ammo type filter
+            if (!ammoTypeFilter.isEmpty()) {
+                QString weaponAmmo = weapon["ammoType"].toString();
+                if (weaponAmmo.toLower() != ammoTypeFilter.toLower()) {
+                    continue;
+                }
+            }
+            
             // Apply source filter
             if (!matchesSourceFilter(weapon)) {
                 continue; // Skip weapons that don't match source filter
+            }
+            
+            // Apply trait filter
+            if (!matchesTraitFilter(weapon)) {
+                continue; // Skip weapons that don't match trait filter
             }
             
             // Note: uniqueByName filter is applied AFTER sorting to prefer newer season weapons
@@ -620,10 +984,12 @@ void WeaponSearchModel::filterWeapons()
         // - noLimit flag (-*): no limit
         // - isSeasonSearch (s27, Season 27): no limit  
         // - sourceFilters active (-s gambit): no limit
+        // - traitFilters active (-t firefly): no limit
+        // - damageTypeFilter or ammoTypeFilter active: no limit
         // - holofoilOnly, uniqueByName, adeptOnly, or exoticOnly with no other search: no limit
         // - Otherwise: limit to 50
         m_filteredWeapons = QJsonArray();
-        bool shouldRemoveLimit = noLimit || isSeasonSearch || !sourceFilters.isEmpty() || ((holofoilOnly || uniqueByName || adeptOnly || exoticOnly) && searchTerms.isEmpty());
+        bool shouldRemoveLimit = noLimit || isSeasonSearch || !sourceFilters.isEmpty() || !traitFilters.isEmpty() || hasDamageOrAmmoFilter || ((holofoilOnly || uniqueByName || adeptOnly || exoticOnly) && searchTerms.isEmpty());
         int maxResults = shouldRemoveLimit ? scoredWeapons.size() : qMin(50, static_cast<int>(scoredWeapons.size()));
         
         // Apply uniqueByName filter AFTER sorting - this ensures newer season weapons are preferred

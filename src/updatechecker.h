@@ -38,6 +38,7 @@ public:
     QString updatedToVersion() const { return m_updatedToVersion; }
     
     Q_INVOKABLE void checkForUpdates();
+    Q_INVOKABLE void checkForUpdatesIfNeeded();  // Check only if 4+ hours since last check
     Q_INVOKABLE void openDownloadPage();
     Q_INVOKABLE void skipVersion(const QString &version);
     Q_INVOKABLE bool isVersionSkipped(const QString &version);
@@ -86,6 +87,7 @@ private:
     bool m_checking = false;
     bool m_downloading = false;
     int m_downloadProgress = 0;
+    qint64 m_lastCheckTime = 0;  // Unix timestamp of last update check
     
     static const QString GITHUB_API_URL;
     static const QString GITHUB_REPO;

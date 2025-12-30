@@ -61,6 +61,13 @@ Window {
         updateCheckTimer.start()
     }
     
+    // Check for updates when window becomes visible (max once per 4 hours)
+    onVisibleChanged: {
+        if (visible && !isLoading) {
+            updateChecker.checkForUpdatesIfNeeded()
+        }
+    }
+    
     // Timer to check for updates after app starts
     Timer {
         id: updateCheckTimer
