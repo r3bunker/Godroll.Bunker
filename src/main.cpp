@@ -9,6 +9,7 @@
 #include "weaponloader.h"
 #include "trayicon.h"
 #include "updatechecker.h"
+#include "manifestchecker.h"
 
 // Version from CMake
 #ifndef APP_VERSION
@@ -61,6 +62,7 @@ int main(int argc, char *argv[])
     GlobalHotkey hotkey;
     TrayIcon trayIcon;
     UpdateChecker updateChecker;
+    ManifestChecker manifestChecker;
     
     // Show tray icon
     trayIcon.show();
@@ -79,6 +81,24 @@ int main(int argc, char *argv[])
     QObject::connect(&weaponLoader, &WeaponLoader::weaponsLoaded, 
                      &searchModel, &WeaponSearchModel::setWeapons);
 
+    // Manifest checker: reload weapons when manifest version changes
+    QObject::connect(&manifestChecker, &ManifestChecker::manifestChanged,
+                     &weaponLoader, &WeaponLoader::reload);
+
+    // Tray icon auto-refresh toggle syncs with manifest checker
+    QObject::connect(&trayIcon, &TrayIcon::autoRefreshToggled,
+                     &manifestChecker, &ManifestChecker::setAutoRefresh);
+
+    // Initial manifest check after weapons are first loaded
+    QObject::connect(&searchModel, &WeaponSearchModel::weaponsLoaded,
+                     &manifestChecker, [&manifestChecker]() {
+        static bool firstLoad = true;
+        if (firstLoad) {
+            firstLoad = false;
+            manifestChecker.checkNow();
+        }
+    });
+
     QQmlApplicationEngine engine;
     
     // Expose C++ objects to QML
@@ -87,6 +107,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("trayIcon", &trayIcon);
     engine.rootContext()->setContextProperty("weaponLoader", &weaponLoader);
     engine.rootContext()->setContextProperty("updateChecker", &updateChecker);
+    engine.rootContext()->setContextProperty("manifestChecker", &manifestChecker);
     engine.rootContext()->setContextProperty("startHidden", startHidden);
     engine.rootContext()->setContextProperty("appVersion", APP_VERSION);
 

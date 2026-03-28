@@ -6,6 +6,7 @@
 #include <QNetworkReply>
 #include <QJsonArray>
 #include <QTimer>
+#include <QList>
 #include <functional>
 
 class WeaponLoader : public QObject
@@ -39,6 +40,12 @@ private:
     int m_retryCount;
     static const int MAX_RETRIES = 3;
     static const int TIMEOUT_MS = 15000; // 15 seconds
+
+    // F5 spam protection: max 3 reloads per 60 seconds
+    QJsonArray m_cachedWeapons;
+    QList<qint64> m_reloadTimestamps;
+    static const int RELOAD_WINDOW_SECS = 60;
+    static const int MAX_RELOADS_PER_WINDOW = 3;
 };
 
 #endif // WEAPONLOADER_H

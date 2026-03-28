@@ -2,6 +2,7 @@
 #include "seasonmapping.h"
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QDateTime>
 #include <QDebug>
 
 WeaponLoader::WeaponLoader(QObject *parent)
@@ -131,6 +132,9 @@ void WeaponLoader::onNetworkReply(QNetworkReply *reply)
                 qDebug() << "Loaded" << processedWeapons.size() << "weapons";
                 m_currentReply = nullptr;
                 
+                // Cache for spam protection
+                m_cachedWeapons = processedWeapons;
+                
                 // Emit signal for QML connections
                 emit weaponsLoaded(processedWeapons);
                 
@@ -185,7 +189,24 @@ void WeaponLoader::onNetworkReply(QNetworkReply *reply)
 
 void WeaponLoader::reload()
 {
-    qDebug() << "Reloading weapons (F5 pressed)...";
+    // Spam protection: max 3 reloads per 60 seconds
+    qint64 now = QDateTime::currentSecsSinceEpoch();
+    // Remove timestamps older than the window
+    while (!m_reloadTimestamps.isEmpty() && (now - m_reloadTimestamps.first()) > RELOAD_WINDOW_SECS) {
+        m_reloadTimestamps.removeFirst();
+    }
+    if (m_reloadTimestamps.size() >= MAX_RELOADS_PER_WINDOW && !m_cachedWeapons.isEmpty()) {
+        qDebug() << "Reload throttled - serving cached data";
+        emit reloadStarted();
+        // Brief delay so loading animation is visible
+        QTimer::singleShot(400, this, [this]() {
+            emit weaponsLoaded(m_cachedWeapons);
+        });
+        return;
+    }
+    m_reloadTimestamps.append(now);
+
+    qDebug() << "Reloading weapons...";
     emit reloadStarted();
     m_retryCount = 0;
     startRequest();

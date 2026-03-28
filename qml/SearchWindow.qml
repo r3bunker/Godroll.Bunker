@@ -18,6 +18,9 @@ Rectangle {
 
     // Loading state from parent
     property bool isLoading: false
+    
+    // Loading message text from parent
+    property string loadingMessage: "Loading weapons..."
 
     // Function to focus search input and select first item (used on initial show)
     function focusSearchInput() {
@@ -821,7 +824,7 @@ Rectangle {
                 }
 
                 Text {
-                    text: "Loading weapons..."
+                    text: searchWindow.loadingMessage
                     font.family: searchWindow.mainFont
                     font.pixelSize: 18
                     color: "#09d7d0"
@@ -852,7 +855,7 @@ Rectangle {
         // Keyboard shortcut hint
         Text {
             Layout.fillWidth: true
-            text: "Alt+G to toggle • ESC to close • ↑↓ to navigate • Enter to open"
+            text: "Alt+G to toggle • ESC to close • F5 to refresh • ↑↓ to navigate • Enter to open"
             font.family: searchWindow.mainFont
             font.pixelSize: 13
             color: "#999999"

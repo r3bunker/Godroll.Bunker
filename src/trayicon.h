@@ -21,6 +21,7 @@ signals:
     void showHideRequested();
     void exitRequested();
     void checkForUpdatesRequested();
+    void autoRefreshToggled(bool checked);
 
 private slots:
     void onActivated(QSystemTrayIcon::ActivationReason reason);
@@ -35,6 +36,7 @@ private:
     QSystemTrayIcon *m_trayIcon;
     QMenu *m_menu;
     QAction *m_startupAction;
+    QAction *m_autoRefreshAction;
     QAction *m_checkUpdatesAction;
     QAction *m_exitAction;
 };

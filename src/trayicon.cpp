@@ -56,6 +56,12 @@ TrayIcon::TrayIcon(QObject *parent)
     m_startupAction->setChecked(isStartupEnabled());
     connect(m_startupAction, &QAction::toggled, this, &TrayIcon::onStartupToggled);
 
+    m_autoRefreshAction = new QAction("Auto Refresh Weapon List", this);
+    m_autoRefreshAction->setCheckable(true);
+    QSettings autoRefreshSettings("Godroll.tv", "GodrollLauncher");
+    m_autoRefreshAction->setChecked(autoRefreshSettings.value("autoRefreshWeapons", true).toBool());
+    connect(m_autoRefreshAction, &QAction::toggled, this, &TrayIcon::autoRefreshToggled);
+
     m_checkUpdatesAction = new QAction("Check for Updates", this);
     connect(m_checkUpdatesAction, &QAction::triggered, this, &TrayIcon::checkForUpdatesRequested);
 
@@ -66,6 +72,7 @@ TrayIcon::TrayIcon(QObject *parent)
     m_menu->addAction(titleAction);
     m_menu->addSeparator();
     m_menu->addAction(m_startupAction);
+    m_menu->addAction(m_autoRefreshAction);
     m_menu->addAction(m_checkUpdatesAction);
     m_menu->addSeparator();
     m_menu->addAction(m_exitAction);

@@ -32,6 +32,7 @@ set(SOURCES
     src/weaponloader.cpp
     src/trayicon.cpp
     src/updatechecker.cpp
+    src/manifestchecker.cpp
 )
 
 set(HEADERS
@@ -41,6 +42,7 @@ set(HEADERS
     src/trayicon.h
     src/seasonmapping.h
     src/updatechecker.h
+    src/manifestchecker.h
 )
 
 # Windows icon and version resource

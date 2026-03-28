@@ -14,6 +14,9 @@ Window {
     // Track loading state
     property bool isLoading: true
     
+    // Loading message text (changes for manifest reload)
+    property string loadingMessage: "Loading weapons..."
+    
     // Track if we're in the process of hiding (for animation)
     property bool isHiding: false
     // Track if ESC was pressed (to do reset after hide animation)
@@ -134,12 +137,25 @@ Window {
         }
         function onWeaponsLoaded() {
             root.isLoading = false
+            root.loadingMessage = "Loading weapons..."
             searchWindowComponent.focusSearchInput()
+        }
+    }
+
+    // Handle manifest checker
+    Connections {
+        target: manifestChecker
+        function onManifestChanged() {
+            root.loadingMessage = "Updating weapon database..."
         }
     }
 
     // Hide when focus is lost (no reset, just hide with animation)
     onActiveChanged: {
+        if (active && !isLoading) {
+            // Check manifest when app comes to foreground
+            manifestChecker.checkIfNeeded()
+        }
         if (!active && visible && !ignoreFocusLoss && !isHiding) {
             isHiding = true
             root.opacity = 0
@@ -218,6 +234,7 @@ Window {
         id: searchWindowComponent
         anchors.centerIn: parent
         isLoading: root.isLoading
+        loadingMessage: root.loadingMessage
         onClose: {
             // ESC triggers reset + hide with animation
             if (!root.isHiding) {
