@@ -11,6 +11,7 @@ ManifestChecker::ManifestChecker(QObject *parent)
     : QObject(parent)
     , m_networkManager(new QNetworkAccessManager(this))
     , m_pendingJitterCheck(false)
+    , m_isInitialCheck(false)
 {
     connect(m_networkManager, &QNetworkAccessManager::finished,
             this, &ManifestChecker::onNetworkReply);
@@ -26,6 +27,9 @@ ManifestChecker::ManifestChecker(QObject *parent)
 
 void ManifestChecker::checkNow()
 {
+    // Initial check: only stores the current version, never triggers a reload.
+    // Weapons were just loaded fresh from API, so reloading would be redundant.
+    m_isInitialCheck = true;
     checkManifest();
 }
 
@@ -102,11 +106,12 @@ void ManifestChecker::onNetworkReply(QNetworkReply *reply)
     QSettings settings("Godroll.tv", "GodrollLauncher");
     settings.setValue("manifestLastCheckTime", m_lastCheckTime);
 
-    if (m_lastKnownVersion.isEmpty()) {
-        // First time ever — just store version, no reload
-        qDebug() << "First manifest check, storing version:" << newVersion;
+    if (m_lastKnownVersion.isEmpty() || m_isInitialCheck) {
+        // First time ever or initial app load — just store version, no reload
+        qDebug() << "Manifest check (initial), storing version:" << newVersion;
         m_lastKnownVersion = newVersion;
         settings.setValue("manifestLastKnownVersion", m_lastKnownVersion);
+        m_isInitialCheck = false;
         return;
     }
 

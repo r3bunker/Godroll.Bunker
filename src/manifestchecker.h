@@ -14,7 +14,7 @@ class ManifestChecker : public QObject
 public:
     explicit ManifestChecker(QObject *parent = nullptr);
 
-    // Check immediately (initial load, no throttle)
+    // Check immediately (initial load — stores version, never triggers reload)
     Q_INVOKABLE void checkNow();
 
     // Check only if 4+ hours since last check (foreground trigger, with jitter)
@@ -38,6 +38,7 @@ private:
     qint64 m_lastCheckTime;
     bool m_autoRefresh;
     bool m_pendingJitterCheck;
+    bool m_isInitialCheck;
 
     static const qint64 CHECK_INTERVAL = 4 * 60 * 60; // 4 hours in seconds
     static const int JITTER_MAX_MS = 30000; // 0-30 seconds random jitter
