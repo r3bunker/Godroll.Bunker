@@ -6,6 +6,11 @@ A desktop launcher for quick Destiny 2 weapon search on [Godroll.tv](https://god
 ![Qt](https://img.shields.io/badge/Qt-6.10+-green)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
+<div align="center">
+  <img src="docs/screenshot.png" alt="Godroll Launcher Screenshot" width="500">
+  <p><em>Quick weapon search with filters, perk aliases, and holofoil indicators</em></p>
+</div>
+
 ## Features
 
 ### Search
