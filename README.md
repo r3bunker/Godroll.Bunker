@@ -8,7 +8,7 @@ A desktop launcher for quick Destiny 2 weapon search on [Godroll.tv](https://god
 
 <div align="center">
   <img src="docs/screenshot.png" alt="Godroll Launcher Screenshot" width="500">
-  <p><em>Quick weapon search with filters, perk aliases, and holofoil indicators</em></p>
+  <p><em>App screenshot</em></p>
 </div>
 
 ## Features
