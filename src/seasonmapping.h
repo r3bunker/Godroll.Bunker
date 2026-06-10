@@ -138,6 +138,8 @@ private:
         m_seasons["v900"] = {"v900", "Reclamation", 27, "Edge of Fate", "core"};
         m_seasons["v910"] = {"v910", "Ash & Iron", 27, "Edge of Fate", "core"};
         m_seasons["v950"] = {"v950", "Renegades", 28, "", "season"};
+        m_seasons["v960"] = {"v960", "Monument of Triumph", 29, "", "season"};
+        m_seasons["v970"] = {"v970", "Monument of Triumph", 29, "", "season"};
     }
     
     QHash<QString, SeasonInfo> m_seasons;
