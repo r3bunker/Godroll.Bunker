@@ -34,7 +34,10 @@ public:
         DamageTypeRole,
         DamageTypeIconRole,
         AmmoTypeRole,
-        AmmoTypeIconRole
+        AmmoTypeIconRole,
+        IconWatermarkRole,
+        IsTier5WeaponRole,
+        TierTypeNameRole
     };
 
     explicit WeaponSearchModel(QObject *parent = nullptr);

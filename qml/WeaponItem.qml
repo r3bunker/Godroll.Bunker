@@ -72,8 +72,20 @@ Rectangle {
             Layout.preferredHeight: 68
             color: "#151515"
             radius: 7
+            clip: true
+            border.color: {
+                if (model.isTier5Weapon) return "#f4c542"
+                var t = (model.tierTypeName || "").toLowerCase()
+                if (t === "exotic")    return "#ceae33"  // Exotic - gold
+                if (t === "legendary") return "#b07bdf"  // Legendary - purple
+                if (t === "rare")      return "#5076a3"  // Rare - blue
+                if (t === "uncommon")  return "#366f42"  // Uncommon - green
+                return "#c0bbb4"                         // Common - white/grey
+            }
+            border.width: 1
 
             Image {
+                id: weaponIcon
                 anchors.fill: parent
                 anchors.margins: 8
                 source: model.icon ? "https://www.bungie.net" + model.icon : ""
@@ -83,6 +95,41 @@ Rectangle {
                 antialiasing: true
                 cache: true
                 asynchronous: true
+            }
+
+            // Watermark overlay (e.g. expansion/season icon)
+            Image {
+                visible: model.iconWatermark && model.iconWatermark.length > 0
+                anchors.fill: weaponIcon
+                anchors.margins: -1
+                source: model.iconWatermark ? "https://www.bungie.net" + model.iconWatermark : ""
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                mipmap: true
+                antialiasing: true
+                cache: true
+                asynchronous: true
+            }
+
+            // Tier 5: 5 gold diamonds stacked vertically in top-right corner
+            Column {
+                visible: model.isTier5Weapon === true
+                anchors.top: parent.top
+                anchors.topMargin: 22
+                anchors.left: parent.left
+                anchors.leftMargin: 15
+                spacing: 3
+                z: 2
+
+                Repeater {
+                    model: 5
+                    Rectangle {
+                        width: 5
+                        height: 5
+                        color: "#f4c542"
+                        transform: Rotation { angle: 45 }
+                    }
+                }
             }
         }
 
@@ -189,6 +236,30 @@ Rectangle {
                     asynchronous: true
                 }
                 
+                // ID match badge — shown only when search matched by hash ID
+                Rectangle {
+                    visible: {
+                        if (!model.matchedField) return false
+                        return model.matchedField.indexOf("id") !== -1
+                    }
+                    color: "#1e2d42"
+                    border.color: "#4a7ab5"
+                    border.width: 1
+                    radius: 4
+                    Layout.preferredWidth: idNameBadgeText.implicitWidth + 12
+                    Layout.preferredHeight: idNameBadgeText.implicitHeight + 6
+
+                    Text {
+                        id: idNameBadgeText
+                        anchors.centerIn: parent
+                        text: "ID: " + (model.hash !== undefined ? model.hash : "")
+                        font.family: root.fontFamily
+                        font.pixelSize: 12
+                        font.weight: Font.Medium
+                        color: "#6aaee8"
+                    }
+                }
+
                 // Spacer to push everything to left
                 Item {
                     Layout.fillWidth: true
@@ -302,6 +373,7 @@ Rectangle {
                         color: parent.isMatched ? "#d7a909" : "#666666"
                     }
                 }
+
             }
         }
     }

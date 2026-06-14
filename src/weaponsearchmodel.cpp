@@ -64,6 +64,12 @@ QVariant WeaponSearchModel::data(const QModelIndex &index, int role) const
         return weapon["ammoType"].toString();
     case AmmoTypeIconRole:
         return weapon["ammoTypeIcon"].toString();
+    case IconWatermarkRole:
+        return weapon["iconWatermark"].toString();
+    case IsTier5WeaponRole:
+        return weapon["isTier5Weapon"].toBool();
+    case TierTypeNameRole:
+        return weapon["tierTypeName"].toString();
     default:
         return QVariant();
     }
@@ -86,6 +92,9 @@ QHash<int, QByteArray> WeaponSearchModel::roleNames() const
     roles[DamageTypeIconRole] = "damageTypeIcon";
     roles[AmmoTypeRole] = "ammoType";
     roles[AmmoTypeIconRole] = "ammoTypeIcon";
+    roles[IconWatermarkRole] = "iconWatermark";
+    roles[IsTier5WeaponRole] = "isTier5Weapon";
+    roles[TierTypeNameRole] = "tierTypeName";
     return roles;
 }
 
@@ -301,6 +310,47 @@ void WeaponSearchModel::filterWeapons()
         {"primary", "Primary"},
         {"special", "Special"},
         {"heavy", "Heavy"}
+    };
+    
+    // Weapon type community abbreviations (e.g. "lfr" -> "linear fusion rifle")
+    static const QMap<QString, QString> WEAPON_TYPE_ALIASES = {
+        {"smg",                 "submachine gun"},
+        {"hc",                  "hand cannon"},
+        {"lmg",                 "machine gun"},
+        {"mg",                  "machine gun"},
+        {"ar",                  "auto rifle"},
+        {"pr",                  "pulse rifle"},
+        {"sr",                  "scout rifle"},
+        {"sniper",              "sniper rifle"},
+        {"sg",                  "shotgun"},
+        {"shottie",             "shotgun"},
+        {"shotty",              "shotgun"},
+        {"fr",                  "fusion rifle"},
+        {"lfr",                 "linear fusion rifle"},
+        {"linear",              "linear fusion rifle"},
+        {"gl",                  "grenade launcher"},
+        {"rl",                  "rocket launcher"},
+        {"rocket",              "rocket launcher"},
+        {"sw",                  "sword"},
+        {"tr",                  "trace rifle"},
+        {"trace",               "trace rifle"},
+        {"bow",                 "combat bow"},
+        {"sa",                  "sidearm"},
+        {"glaive",              "glaive"},
+        {"handcannon",          "hand cannon"},
+        {"autorifle",           "auto rifle"},
+        {"pulserifle",          "pulse rifle"},
+        {"scoutrifle",          "scout rifle"},
+        {"sniperrifle",         "sniper rifle"},
+        {"fusionrifle",         "fusion rifle"},
+        {"linearfusion",        "linear fusion rifle"},
+        {"linearfusionrifle",   "linear fusion rifle"},
+        {"grenadelauncher",     "grenade launcher"},
+        {"rocketlauncher",      "rocket launcher"},
+        {"tracerifle",          "trace rifle"},
+        {"machinegun",          "machine gun"},
+        {"submachinegun",       "submachine gun"},
+        {"combatbow",           "combat bow"},
     };
     
     QString queryLower = m_searchQuery.toLower().trimmed();
@@ -784,6 +834,18 @@ void WeaponSearchModel::filterWeapons()
         // Split query into terms for normal search
         QStringList searchTerms = queryLower.split(' ', Qt::SkipEmptyParts);
         
+        // Check if query is a pure hash/ID search (e.g., "3267997292")
+        bool isIdSearch = false;
+        quint64 searchedHash = 0;
+        {
+            bool ok = false;
+            quint64 hashVal = queryLower.trimmed().toULongLong(&ok);
+            if (ok && !queryLower.trimmed().isEmpty()) {
+                isIdSearch = true;
+                searchedHash = hashVal;
+            }
+        }
+        
         // Track seen weapon base names for uniqueByName filter
         std::set<QString> seenWeaponNames;
         
@@ -858,6 +920,18 @@ void WeaponSearchModel::filterWeapons()
                 continue; // Skip normal term matching for season-specific searches
             }
             
+            // If this is an ID/hash search, match only the weapon with the exact hash
+            if (isIdSearch) {
+                quint64 weaponHash = weapon["hash"].isDouble()
+                    ? static_cast<quint64>(weapon["hash"].toDouble())
+                    : weapon["hash"].toString().toULongLong();
+                if (weaponHash == searchedHash) {
+                    weapon["matchedField"] = "id";
+                    scoredWeapons.append({10000, seasonNum, name, weapon});
+                }
+                continue;
+            }
+            
             // If only flags were provided (no search terms), show all weapons
             if (searchTerms.isEmpty()) {
                 weapon["matchedField"] = "";
@@ -876,8 +950,8 @@ void WeaponSearchModel::filterWeapons()
                 
                 // Priority order (highest to lowest):
                 // 1. Name (weapon name) - 1.0x + 1000 bonus (highest priority)
-                // 2. Weapon type - 0.9x
-                // 3. Frame type - 0.8x
+                // 2. Frame type - 0.97x (partial matching, e.g. "adaptive" -> "Adaptive Frame")
+                // 3. Weapon type - 0.85x (with aliases, e.g. "lfr", "hc", "sniper")
                 // 4. Season number ("Season X" format) - 0.6x
                 // 5. Season name/display - 0.5x (lowest priority)
                 
@@ -911,18 +985,21 @@ void WeaponSearchModel::filterWeapons()
                     }
                 }
                 
-                // Check frame type (0.8x multiplier)
-                int frameTypeScore = fuzzyScore(frameType, term);
-                if (frameTypeScore > 0 && static_cast<int>(frameTypeScore * 0.8) > termScore) {
-                    termScore = static_cast<int>(frameTypeScore * 0.8);
-                    termMatchedField = "frameType";
+                // Check weapon type - 0.85x (with community aliases)
+                int weaponTypeScore = fuzzyScore(weaponType, term);
+                if (WEAPON_TYPE_ALIASES.contains(term) && weaponType.contains(WEAPON_TYPE_ALIASES.value(term))) {
+                    weaponTypeScore = qMax(weaponTypeScore, 900); // Alias exact match — high score
+                }
+                if (weaponTypeScore > 0 && static_cast<int>(weaponTypeScore * 0.85) > termScore) {
+                    termScore = static_cast<int>(weaponTypeScore * 0.85);
+                    termMatchedField = "weaponType";
                 }
                 
-                // Check weapon type (0.9x multiplier)
-                int weaponTypeScore = fuzzyScore(weaponType, term);
-                if (weaponTypeScore > 0 && static_cast<int>(weaponTypeScore * 0.9) > termScore) {
-                    termScore = static_cast<int>(weaponTypeScore * 0.9);
-                    termMatchedField = "weaponType";
+                // Check frame type - 0.97x (highest after name, partial matching prioritized)
+                int frameTypeScore = fuzzyScore(frameType, term);
+                if (frameTypeScore > 0 && static_cast<int>(frameTypeScore * 0.97) > termScore) {
+                    termScore = static_cast<int>(frameTypeScore * 0.97);
+                    termMatchedField = "frameType";
                 }
                 
                 // Check name (highest priority - 1.0x + 1000 bonus)
@@ -989,7 +1066,7 @@ void WeaponSearchModel::filterWeapons()
         // - holofoilOnly, uniqueByName, adeptOnly, or exoticOnly with no other search: no limit
         // - Otherwise: limit to 50
         m_filteredWeapons = QJsonArray();
-        bool shouldRemoveLimit = noLimit || isSeasonSearch || !sourceFilters.isEmpty() || !traitFilters.isEmpty() || hasDamageOrAmmoFilter || ((holofoilOnly || uniqueByName || adeptOnly || exoticOnly) && searchTerms.isEmpty());
+        bool shouldRemoveLimit = noLimit || isSeasonSearch || isIdSearch || !sourceFilters.isEmpty() || !traitFilters.isEmpty() || hasDamageOrAmmoFilter || ((holofoilOnly || uniqueByName || adeptOnly || exoticOnly) && searchTerms.isEmpty());
         int maxResults = shouldRemoveLimit ? scoredWeapons.size() : qMin(50, static_cast<int>(scoredWeapons.size()));
         
         // Apply uniqueByName filter AFTER sorting - this ensures newer season weapons are preferred
