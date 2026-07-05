@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(GodrollLauncher VERSION 1.1.26 LANGUAGES CXX)
+project(GodrollBunker VERSION 1.1.26 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -55,14 +55,14 @@ if(WIN32)
     set(APP_ICON_RESOURCE "${CMAKE_CURRENT_BINARY_DIR}/app.rc")
 endif()
 
-qt_add_executable(GodrollLauncher
+qt_add_executable(GodrollBunker
     ${SOURCES}
     ${HEADERS}
     ${APP_ICON_RESOURCE}
 )
 
-qt_add_qml_module(GodrollLauncher
-    URI GodrollLauncher
+qt_add_qml_module(GodrollBunker
+    URI GodrollBunker
     VERSION 1.0
     QML_FILES
         qml/main.qml
@@ -75,7 +75,7 @@ qt_add_qml_module(GodrollLauncher
         resources/fonts/SpaceGrotesk.ttf
 )
 
-target_link_libraries(GodrollLauncher PRIVATE
+target_link_libraries(GodrollBunker PRIVATE
     Qt6::Core
     Qt6::Quick
     Qt6::Network
@@ -85,7 +85,7 @@ target_link_libraries(GodrollLauncher PRIVATE
 
 # macOS specific - link Carbon framework for global hotkeys
 if(APPLE)
-    target_link_libraries(GodrollLauncher PRIVATE
+    target_link_libraries(GodrollBunker PRIVATE
         "-framework Carbon"
         "-framework ApplicationServices"
     )
@@ -93,7 +93,7 @@ endif()
 
 # Windows specific
 if(WIN32)
-    set_target_properties(GodrollLauncher PROPERTIES
+    set_target_properties(GodrollBunker PROPERTIES
         WIN32_EXECUTABLE TRUE
     )
 endif()
@@ -103,12 +103,12 @@ if(APPLE)
     set(MACOSX_BUNDLE_ICON_FILE AppIcon.icns)
     set(APP_ICON_MACOS "${CMAKE_CURRENT_SOURCE_DIR}/resources/AppIcon.icns")
     set_source_files_properties(${APP_ICON_MACOS} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-    target_sources(GodrollLauncher PRIVATE ${APP_ICON_MACOS})
+    target_sources(GodrollBunker PRIVATE ${APP_ICON_MACOS})
     
-    set_target_properties(GodrollLauncher PROPERTIES
+    set_target_properties(GodrollBunker PROPERTIES
         MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_GUI_IDENTIFIER "tv.godroll.launcher"
-        MACOSX_BUNDLE_BUNDLE_NAME "Godroll Launcher"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "bunker.godroll.launcher"
+        MACOSX_BUNDLE_BUNDLE_NAME "Godroll.Bunker"
         MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/resources/Info.plist.in"
@@ -117,7 +117,7 @@ if(APPLE)
 endif()
 
 # Install
-install(TARGETS GodrollLauncher
+install(TARGETS GodrollBunker
     BUNDLE DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

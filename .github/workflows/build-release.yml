@@ -35,7 +35,7 @@ jobs:
       shell: pwsh
       run: |
         $content = Get-Content "CMakeLists.txt" -Raw
-        if ($content -match 'project\(GodrollLauncher VERSION (\d+)\.(\d+)\.(\d+)') {
+        if ($content -match 'project\(GodrollBunker VERSION (\d+)\.(\d+)\.(\d+)') {
           $major = $matches[1]
           $minor = $matches[2]
           $patch = $matches[3]
@@ -62,7 +62,7 @@ jobs:
       run: |
         $content = Get-Content "CMakeLists.txt" -Raw
         $newVersion = "${{ steps.new_version.outputs.NEW_VERSION }}"
-        $content = $content -replace 'project\(GodrollLauncher VERSION \d+\.\d+\.\d+', "project(GodrollLauncher VERSION $newVersion"
+        $content = $content -replace 'project\(GodrollBunker VERSION \d+\.\d+\.\d+', "project(GodrollBunker VERSION $newVersion"
         Set-Content "CMakeLists.txt" $content -NoNewline
         
     - name: Install Qt
@@ -93,9 +93,9 @@ jobs:
       run: |
         cd build
         New-Item -ItemType Directory -Force -Path deploy
-        Copy-Item "GodrollLauncher.exe" -Destination "deploy/"
+        Copy-Item "GodrollBunker.exe" -Destination "deploy/"
         cd deploy
-        windeployqt --release --qmldir ../../qml GodrollLauncher.exe
+        windeployqt --release --qmldir ../../qml GodrollBunker.exe
         
     - name: Clean unnecessary files
       shell: pwsh
@@ -109,7 +109,7 @@ jobs:
       shell: pwsh
       run: |
         $version = "${{ steps.new_version.outputs.NEW_VERSION }}"
-        Compress-Archive -Path "build/deploy/*" -DestinationPath "GodrollLauncher-v$version.zip"
+        Compress-Archive -Path "build/deploy/*" -DestinationPath "GodrollBunker-v$version.zip"
 
     - name: Commit version update
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -126,9 +126,9 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         tag_name: v${{ steps.new_version.outputs.NEW_VERSION }}
-        name: Godroll Launcher v${{ steps.new_version.outputs.NEW_VERSION }}
+        name: Godroll.Bunker v${{ steps.new_version.outputs.NEW_VERSION }}
         body: |
-          ## Godroll Launcher v${{ steps.new_version.outputs.NEW_VERSION }}
+          ## Godroll.Bunker v${{ steps.new_version.outputs.NEW_VERSION }}
           
           ### Search Features
           - **Flag modifiers**: `-!` (unique), `-*` (all), `-h` (holofoil), `-a` (adept), `-e` (exotic)
@@ -156,9 +156,9 @@ jobs:
           - Toggle on/off via "Auto Refresh Weapon List" in system tray menu
           
           ### Installation
-          1. Download `GodrollLauncher-v${{ steps.new_version.outputs.NEW_VERSION }}.zip`
+          1. Download `GodrollBunker-v${{ steps.new_version.outputs.NEW_VERSION }}.zip`
           2. Extract to your preferred location
-          3. Run `GodrollLauncher.exe`
+          3. Run `GodrollBunker.exe`
           
           ### Keyboard Shortcuts
           | Shortcut | Action |
@@ -169,7 +169,7 @@ jobs:
           | `↑/↓` | Navigate results |
           | `Enter` | Open weapon |
           | `Middle-click` | Open weapon (keep launcher open) |
-        files: GodrollLauncher-v${{ steps.new_version.outputs.NEW_VERSION }}.zip
+        files: GodrollBunker-v${{ steps.new_version.outputs.NEW_VERSION }}.zip
         draft: false
         prerelease: false
       env:
@@ -179,6 +179,6 @@ jobs:
       if: github.event_name == 'pull_request'
       uses: actions/upload-artifact@v4
       with:
-        name: GodrollLauncher-v${{ steps.new_version.outputs.NEW_VERSION }}
+        name: GodrollBunker-v${{ steps.new_version.outputs.NEW_VERSION }}
         path: build/deploy/
         retention-days: 7

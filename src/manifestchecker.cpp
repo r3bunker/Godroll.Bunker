@@ -17,7 +17,7 @@ ManifestChecker::ManifestChecker(QObject *parent)
             this, &ManifestChecker::onNetworkReply);
 
     // Load persisted state
-    QSettings settings("Godroll.tv", "GodrollLauncher");
+    QSettings settings("Godroll.Bunker", "GodrollBunker");
     m_lastKnownVersion = settings.value("manifestLastKnownVersion", "").toString();
     m_lastCheckTime = settings.value("manifestLastCheckTime", 0).toLongLong();
     m_autoRefresh = settings.value("autoRefreshWeapons", true).toBool();
@@ -61,7 +61,7 @@ void ManifestChecker::setAutoRefresh(bool enabled)
     if (m_autoRefresh == enabled) return;
     m_autoRefresh = enabled;
 
-    QSettings settings("Godroll.tv", "GodrollLauncher");
+    QSettings settings("Godroll.Bunker", "GodrollBunker");
     settings.setValue("autoRefreshWeapons", m_autoRefresh);
 
     emit autoRefreshChanged();
@@ -103,7 +103,7 @@ void ManifestChecker::onNetworkReply(QNetworkReply *reply)
 
     // Update last check time
     m_lastCheckTime = QDateTime::currentSecsSinceEpoch();
-    QSettings settings("Godroll.tv", "GodrollLauncher");
+    QSettings settings("Godroll.Bunker", "GodrollBunker");
     settings.setValue("manifestLastCheckTime", m_lastCheckTime);
 
     if (m_lastKnownVersion.isEmpty() || m_isInitialCheck) {

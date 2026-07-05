@@ -16,7 +16,7 @@ WeaponSearchModel::WeaponSearchModel(QObject *parent)
     : QAbstractListModel(parent)
 {
     // Load saved preferences
-    QSettings settings("Godroll.tv", "GodrollLauncher");
+    QSettings settings("Godroll.Bunker", "GodrollBunker");
     m_autoShowLatestSeason = settings.value("autoShowLatestSeason", true).toBool();
     m_openInPWA = settings.value("openInPWA", true).toBool();
 }
@@ -1358,7 +1358,7 @@ void WeaponSearchModel::setAutoShowLatestSeason(bool autoShow)
     m_autoShowLatestSeason = autoShow;
     
     // Save preference
-    QSettings settings("Godroll.tv", "GodrollLauncher");
+    QSettings settings("Godroll.Bunker", "GodrollBunker");
     settings.setValue("autoShowLatestSeason", autoShow);
     
     emit autoShowLatestSeasonChanged();
@@ -1372,7 +1372,7 @@ void WeaponSearchModel::setOpenInPWA(bool open)
     m_openInPWA = open;
     
     // Save preference
-    QSettings settings("Godroll.tv", "GodrollLauncher");
+    QSettings settings("Godroll.Bunker", "GodrollBunker");
     settings.setValue("openInPWA", open);
     
     emit openInPWAChanged();

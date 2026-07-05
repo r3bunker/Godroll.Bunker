@@ -3,3 +3,4 @@ build/
 *.autosave
 .vscode/
 .vs/
+.DS_Store

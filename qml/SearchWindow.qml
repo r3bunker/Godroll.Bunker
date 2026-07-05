@@ -128,7 +128,7 @@ Rectangle {
         anchors.margins: 24
         spacing: 16
 
-        // Logo - Text based GODROLL TV with SVG icon
+        // Logo - Text based GODROLL BUNKER with SVG icon
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 65
@@ -148,7 +148,7 @@ Rectangle {
                     // Logo SVG icon
                     Image {
                         id: logoIcon
-                        source: "qrc:/qt/qml/GodrollLauncher/resources/logo.svg"
+                        source: "qrc:/qt/qml/GodrollBunker/resources/logo.svg"
                         width: 40
                         height: 40
                         fillMode: Image.PreserveAspectFit
@@ -171,9 +171,9 @@ Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
                     }
                     
-                    // TV superscript - slightly below top of GODROLL text
+                    // BUNKER superscript - slightly below top of GODROLL text
                     Text {
-                        text: "TV"
+                        text: "BUNKER"
                         font.family: searchWindow.mainFont
                         font.pixelSize: 16
                         font.weight: Font.Bold
@@ -216,7 +216,7 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 22
                 height: 22
-                source: "qrc:/qt/qml/GodrollLauncher/resources/search-icon.svg"
+                source: "qrc:/qt/qml/GodrollBunker/resources/search-icon.svg"
                 opacity: isLoading ? 0.3 : 0.5
                 smooth: true
                 mipmap: true

@@ -18,7 +18,7 @@
 #include <QDateTime>
 
 const QString UpdateChecker::GITHUB_API_URL = "https://api.github.com/repos/%1/releases/latest";
-const QString UpdateChecker::GITHUB_REPO = "bugrakaan/godroll.tv-app";
+const QString UpdateChecker::GITHUB_REPO = "r3bunker/Godroll.Bunker";
 
 UpdateChecker::UpdateChecker(QObject *parent)
     : QObject(parent)
@@ -29,7 +29,7 @@ UpdateChecker::UpdateChecker(QObject *parent)
             this, &UpdateChecker::onNetworkReply);
     
     // Load last check time from settings
-    QSettings settings("Godroll.tv", "GodrollLauncher");
+    QSettings settings("Godroll.Bunker", "GodrollBunker");
     m_lastCheckTime = settings.value("lastUpdateCheckTime", 0).toLongLong();
     
     // Check if we just updated from a previous version
@@ -57,7 +57,7 @@ void UpdateChecker::checkForUpdates()
     
     // Update last check time
     m_lastCheckTime = QDateTime::currentSecsSinceEpoch();
-    QSettings settings("Godroll.tv", "GodrollLauncher");
+    QSettings settings("Godroll.Bunker", "GodrollBunker");
     settings.setValue("lastUpdateCheckTime", m_lastCheckTime);
     
     QString apiUrl = GITHUB_API_URL.arg(GITHUB_REPO);
@@ -65,7 +65,7 @@ void UpdateChecker::checkForUpdates()
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader("Accept", "application/vnd.github.v3+json");
-    request.setRawHeader("User-Agent", "GodrollLauncher");
+    request.setRawHeader("User-Agent", "GodrollBunker");
     
     qDebug() << "Checking for updates at:" << apiUrl;
     
@@ -216,14 +216,14 @@ void UpdateChecker::openDownloadPage()
 
 void UpdateChecker::skipVersion(const QString &version)
 {
-    QSettings settings("Godroll.tv", "GodrollLauncher");
+    QSettings settings("Godroll.Bunker", "GodrollBunker");
     settings.setValue("skippedVersion", version);
     qDebug() << "Skipped version:" << version;
 }
 
 bool UpdateChecker::isVersionSkipped(const QString &version)
 {
-    QSettings settings("Godroll.tv", "GodrollLauncher");
+    QSettings settings("Godroll.Bunker", "GodrollBunker");
     QString skipped = settings.value("skippedVersion", "").toString();
     return skipped == version;
 }
@@ -255,7 +255,7 @@ void UpdateChecker::downloadAndInstall()
     QUrl url(m_downloadUrl);
     QString fileName = url.fileName();
     if (fileName.isEmpty()) {
-        fileName = "GodrollLauncher_update.exe";
+        fileName = "GodrollBunker_update.exe";
     }
     
     m_downloadedFilePath = downloadDir + "/" + fileName;
@@ -268,7 +268,7 @@ void UpdateChecker::downloadAndInstall()
     
     // Start download
     QNetworkRequest request(url);
-    request.setRawHeader("User-Agent", "GodrollLauncher");
+    request.setRawHeader("User-Agent", "GodrollBunker");
     request.setRawHeader("Accept", "application/octet-stream");
     // GitHub uses redirects for asset downloads - must follow them
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -370,7 +370,7 @@ void UpdateChecker::onDownloadFinished()
     }
     
     // Save the new version to settings so we can show it after restart
-    QSettings settings("Godroll.tv", "GodrollLauncher");
+    QSettings settings("Godroll.Bunker", "GodrollBunker");
     settings.setValue("updatedToVersion", m_latestVersion);
     
     emit downloadComplete(m_downloadedFilePath);
@@ -419,7 +419,7 @@ void UpdateChecker::launchInstallerAndQuit(const QString &installerPath)
 
 void UpdateChecker::clearUpdateNotification()
 {
-    QSettings settings("Godroll.tv", "GodrollLauncher");
+    QSettings settings("Godroll.Bunker", "GodrollBunker");
     settings.remove("updatedToVersion");
     m_updatedToVersion.clear();
     emit updatedToVersionChanged();
@@ -479,7 +479,7 @@ bool UpdateChecker::extractZipAndReplace(const QString &zipPath, const QString &
     qDebug() << "Extracting ZIP:" << zipPath;
     
     // Get the application directory
-    QString tempExtractDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/GodrollUpdate";
+    QString tempExtractDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/GodrollBunkerUpdate";
     
     // Clean up any previous temp extraction
     QDir tempDir(tempExtractDir);
@@ -521,13 +521,13 @@ bool UpdateChecker::extractZipAndReplace(const QString &zipPath, const QString &
     qDebug() << "Source directory for update:" << sourceDir;
     
     // Create a batch script to replace files after app exits
-    QString batchPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/godroll_update.bat";
+    QString batchPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/godroll_bunker_update.bat";
     QFile batchFile(batchPath);
     
     if (batchFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream stream(&batchFile);
         stream << "@echo off\r\n";
-        stream << "echo Updating Godroll Launcher...\r\n";
+        stream << "echo Updating Godroll.Bunker...\r\n";
         stream << "timeout /t 2 /nobreak >nul\r\n"; // Wait for app to close
         
         // Copy all files from extracted directory to app directory

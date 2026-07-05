@@ -1,13 +1,15 @@
-# Godroll Launcher
+# Godroll.Bunker
 
 A desktop launcher for quick Destiny 2 weapon search on [Godroll.tv](https://godroll.tv). Built with Qt 6 and QML.
+
+Personal fork of [bugrakaan/godroll.tv-app](https://github.com/bugrakaan/godroll.tv-app), rebranded as Godroll.Bunker.
 
 ![Platform](https://img.shields.io/badge/Platform-Windows-blue)
 ![Qt](https://img.shields.io/badge/Qt-6.10+-green)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 <div align="center">
-  <img src="docs/screenshot.png" alt="Godroll Launcher Screenshot" width="500">
+  <img src="docs/screenshot.png" alt="Godroll.Bunker Screenshot" width="500">
   <p><em>App screenshot</em></p>
 </div>
 
@@ -65,9 +67,9 @@ Common community shorthand is supported for trait search:
 
 ### Download Release
 1. Go to [Releases](../../releases)
-2. Download the latest `GodrollLauncher-vX.X.X.zip`
+2. Download the latest `GodrollBunker-vX.X.X.zip`
 3. Extract to your preferred location
-4. Run `GodrollLauncher.exe`
+4. Run `GodrollBunker.exe`
 5. (Optional) Right-click system tray icon to enable "Start with Windows"
 
 ### Build from Source
@@ -79,7 +81,7 @@ mkdir build
 cd build
 cmake -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH=C:/Qt/6.10.1/mingw_64 ..
 cmake --build . --config Release
-./GodrollLauncher.exe
+./GodrollBunker.exe
 ```
 
 ## Usage
@@ -170,7 +172,8 @@ arc special           → Arc Special weapons
 ## Links
 
 - Godroll.tv: https://godroll.tv
-- Repository: https://github.com/bugrakaan/godroll.tv-app
+- Repository: https://github.com/r3bunker/Godroll.Bunker
+- Upstream project: https://github.com/bugrakaan/godroll.tv-app
 
 ## License
 
@@ -178,5 +181,5 @@ MIT License
 
 ---
 
-Created with ♥ by [Diabolic#5311](https://www.bungie.net/7/en/User/Profile/3/4611686018520824383)
+Original project created with ♥ by [Diabolic#5311](https://www.bungie.net/7/en/User/Profile/3/4611686018520824383)
 

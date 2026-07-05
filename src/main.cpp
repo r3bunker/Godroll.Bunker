@@ -18,17 +18,17 @@
 
 int main(int argc, char *argv[])
 {
-    qDebug() << "Starting Godroll Launcher v" << APP_VERSION;
+    qDebug() << "Starting Godroll.Bunker v" << APP_VERSION;
     
     QApplication app(argc, argv);
-    app.setApplicationName("Godroll.tv Launcher");
-    app.setApplicationDisplayName("Godroll.tv Launcher");
+    app.setApplicationName("Godroll.Bunker");
+    app.setApplicationDisplayName("Godroll.Bunker");
     app.setApplicationVersion(APP_VERSION);
-    app.setOrganizationName("Godroll.tv");
+    app.setOrganizationName("Godroll.Bunker");
     app.setQuitOnLastWindowClosed(false); // Keep running in background
 
     // Single instance check using shared memory
-    QSharedMemory sharedMemory("GodrollLauncherSingleInstance");
+    QSharedMemory sharedMemory("GodrollBunkerSingleInstance");
     if (!sharedMemory.create(1)) {
         // Another instance is already running
         qDebug() << "Another instance is already running. Exiting.";
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
     qDebug() << "Start hidden:" << startHidden;
 
     // Load custom font
-    int fontId = QFontDatabase::addApplicationFont(":/qt/qml/GodrollLauncher/resources/fonts/SpaceGrotesk.ttf");
+    int fontId = QFontDatabase::addApplicationFont(":/qt/qml/GodrollBunker/resources/fonts/SpaceGrotesk.ttf");
     if (fontId != -1) {
         QStringList fontFamilies = QFontDatabase::applicationFontFamilies(fontId);
         qDebug() << "Loaded font families:" << fontFamilies;
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("startHidden", startHidden);
     engine.rootContext()->setContextProperty("appVersion", APP_VERSION);
 
-    const QUrl url(QStringLiteral("qrc:/qt/qml/GodrollLauncher/qml/main.qml"));
+    const QUrl url(QStringLiteral("qrc:/qt/qml/GodrollBunker/qml/main.qml"));
     
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {

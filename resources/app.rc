@@ -15,13 +15,13 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "CompanyName",      "Godroll.tv"
-            VALUE "FileDescription",  "Godroll Launcher - Destiny 2 weapon search tool"
+            VALUE "CompanyName",      "Godroll.Bunker"
+            VALUE "FileDescription",  "Godroll.Bunker - Destiny 2 weapon search tool"
             VALUE "FileVersion",      "1.1.19.0"
-            VALUE "InternalName",     "GodrollLauncher"
+            VALUE "InternalName",     "GodrollBunker"
             VALUE "LegalCopyright",   "Copyright (c) 2025 Godroll.tv"
-            VALUE "OriginalFilename", "GodrollLauncher.exe"
-            VALUE "ProductName",      "Godroll Launcher"
+            VALUE "OriginalFilename", "GodrollBunker.exe"
+            VALUE "ProductName",      "Godroll.Bunker"
             VALUE "ProductVersion",   "1.1.19.0"
         END
     END

@@ -50,7 +50,7 @@ Rectangle {
             Image {
                 width: 48
                 height: 48
-                source: "qrc:/qt/qml/GodrollLauncher/resources/logo.svg"
+                source: "qrc:/qt/qml/GodrollBunker/resources/logo.svg"
                 fillMode: Image.PreserveAspectFit
                 sourceSize: Qt.size(48, 48)
             }

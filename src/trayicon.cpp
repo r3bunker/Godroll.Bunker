@@ -19,7 +19,7 @@ TrayIcon::TrayIcon(QObject *parent)
     , m_menu(new QMenu())
 {
     // Set icon - use the app logo
-    QIcon appIcon(":/qt/qml/GodrollLauncher/resources/logo.svg");
+    QIcon appIcon(":/qt/qml/GodrollBunker/resources/logo.svg");
     if (appIcon.isNull()) {
         // Fallback to a diamond shape if icon not found
         QPixmap pixmap(32, 32);
@@ -38,13 +38,13 @@ TrayIcon::TrayIcon(QObject *parent)
     
     // Set tooltip with version
     QString version = QCoreApplication::applicationVersion();
-    m_trayIcon->setToolTip(QString("Godroll.tv Launcher v%1").arg(version));
+    m_trayIcon->setToolTip(QString("Godroll.Bunker v%1").arg(version));
 
     // Auto-register startup on first run, or update path if already registered
     initializeStartup();
 
     // Create title action with version (non-clickable header)
-    QAction *titleAction = new QAction(QString("Godroll.tv v%1").arg(version), this);
+    QAction *titleAction = new QAction(QString("Godroll.Bunker v%1").arg(version), this);
     titleAction->setEnabled(false);  // Make it non-clickable
     QFont titleFont;
     titleFont.setBold(true);
@@ -58,7 +58,7 @@ TrayIcon::TrayIcon(QObject *parent)
 
     m_autoRefreshAction = new QAction("Auto Refresh Weapon List", this);
     m_autoRefreshAction->setCheckable(true);
-    QSettings autoRefreshSettings("Godroll.tv", "GodrollLauncher");
+    QSettings autoRefreshSettings("Godroll.tv", "GodrollBunker");
     m_autoRefreshAction->setChecked(autoRefreshSettings.value("autoRefreshWeapons", true).toBool());
     connect(m_autoRefreshAction, &QAction::toggled, this, &TrayIcon::autoRefreshToggled);
 
@@ -114,11 +114,11 @@ bool TrayIcon::isStartupEnabled() const
 {
 #ifdef Q_OS_MAC
     QString launchAgentPath = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) 
-                              + "/Library/LaunchAgents/tv.godroll.launcher.plist";
+                              + "/Library/LaunchAgents/bunker.godroll.launcher.plist";
     return QFile::exists(launchAgentPath);
 #else
     QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
-    return settings.contains("GodrollLauncher");
+    return settings.contains("GodrollBunker");
 #endif
 }
 
@@ -127,7 +127,7 @@ void TrayIcon::setStartupEnabled(bool enabled)
 #ifdef Q_OS_MAC
     QString launchAgentDir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation) 
                              + "/Library/LaunchAgents";
-    QString launchAgentPath = launchAgentDir + "/tv.godroll.launcher.plist";
+    QString launchAgentPath = launchAgentDir + "/bunker.godroll.launcher.plist";
     
     if (enabled) {
         // Create LaunchAgents directory if it doesn't exist
@@ -145,10 +145,10 @@ void TrayIcon::setStartupEnabled(bool enabled)
             "<plist version=\"1.0\">\n"
             "<dict>\n"
             "    <key>Label</key>\n"
-            "    <string>tv.godroll.launcher</string>\n"
+            "    <string>bunker.godroll.launcher</string>\n"
             "    <key>ProgramArguments</key>\n"
             "    <array>\n"
-            "        <string>%1/Contents/MacOS/GodrollLauncher</string>\n"
+            "        <string>%1/Contents/MacOS/GodrollBunker</string>\n"
             "        <string>--hidden</string>\n"
             "    </array>\n"
             "    <key>RunAtLoad</key>\n"
@@ -175,9 +175,9 @@ void TrayIcon::setStartupEnabled(bool enabled)
     if (enabled) {
         QString exePath = getExecutablePath();
         // Add --hidden flag so app starts minimized to tray
-        settings.setValue("GodrollLauncher", QString("\"%1\" --hidden").arg(exePath));
+        settings.setValue("GodrollBunker", QString("\"%1\" --hidden").arg(exePath));
     } else {
-        settings.remove("GodrollLauncher");
+        settings.remove("GodrollBunker");
     }
 #endif
 }
@@ -189,7 +189,7 @@ QString TrayIcon::getExecutablePath() const
 
 void TrayIcon::initializeStartup()
 {
-    QSettings appSettings("Godroll.tv", "GodrollLauncher");
+    QSettings appSettings("Godroll.tv", "GodrollBunker");
     bool isFirstRun = !appSettings.contains("startupInitialized");
     
     if (isFirstRun) {
