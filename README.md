@@ -47,6 +47,15 @@ Common community shorthand is supported for trait search:
 - **`Middle-click`** - Open weapon without closing launcher
 - **`ESC`** - Close launcher or clear search
 - **`F5`** - Reload weapon data
+- **`F2`** - Toggle PvP Active Effects reference panel
+
+### PvP Active Effects Reference
+Press `F2` (or click the `FX` button) for a built-in reference of every exotic
+armor effect that modifies weapon stats in PvP — handling, reload, stability,
+range, airborne effectiveness, and damage multipliers. Includes entries missing
+from godroll.tv's own Active Effects panel (tagged `ADDED`), such as
+St0mp-EE5's −50 AE penalty and Sanguine Alchemy's 4.5% PvP damage boost.
+Type in the search box to filter the list.
 
 ### Interface
 - Weapon icons with damage type and ammo indicators

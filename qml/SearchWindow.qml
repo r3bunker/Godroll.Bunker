@@ -22,6 +22,16 @@ Rectangle {
     // Loading message text from parent
     property string loadingMessage: "Loading weapons..."
 
+    // Active Effects reference panel mode (F2)
+    property bool effectsMode: false
+    property int effectsPanelHeight: 440
+
+    function toggleEffectsMode() {
+        effectsMode = !effectsMode
+        searchModel.clearSearch()
+        searchInput.forceActiveFocus()
+    }
+
     // Function to focus search input and select first item (used on initial show)
     function focusSearchInput() {
         searchInput.forceActiveFocus()
@@ -70,6 +80,11 @@ Rectangle {
     property int sourceFilterBarHeight: 52  // 36 height + 16 spacing
     
     property int calculatedHeight: {
+        // Active Effects panel - fixed height
+        if (effectsMode) {
+            return fixedHeight + effectsPanelHeight
+        }
+
         // Loading state - minimal height
         if (isLoading) {
             return fixedHeight + noResultsHeight
@@ -187,12 +202,48 @@ Rectangle {
                     anchors.fill: logoRow
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    
+
                     onClicked: Qt.openUrlExternally("https://godroll.tv")
-                    
+
                     ToolTip.visible: containsMouse
                     ToolTip.delay: 300
                     ToolTip.text: "Open Godroll.tv"
+                }
+            }
+
+            // Active Effects toggle button
+            Rectangle {
+                id: effectsButton
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                width: effectsButtonText.implicitWidth + 20
+                height: 30
+                radius: 8
+                color: searchWindow.effectsMode ? "#1a3a39" : "#B3232323"
+                border.color: searchWindow.effectsMode ? "#09d7d0" : (effectsButtonArea.containsMouse ? "#555555" : "#2d2d2d")
+                border.width: 1
+
+                Text {
+                    id: effectsButtonText
+                    anchors.centerIn: parent
+                    text: "FX"
+                    font.family: searchWindow.mainFont
+                    font.pixelSize: 13
+                    font.weight: Font.Bold
+                    color: searchWindow.effectsMode ? "#09d7d0" : "#999999"
+                }
+
+                MouseArea {
+                    id: effectsButtonArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+
+                    onClicked: searchWindow.toggleEffectsMode()
+
+                    ToolTip.visible: containsMouse
+                    ToolTip.delay: 300
+                    ToolTip.text: "PvP Active Effects (F2)"
                 }
             }
         }
@@ -249,7 +300,7 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 width: badgesRow.width
                 height: badgesRow.height
-                visible: !isLoading && (searchInput.text.length > 0 || searchModel.showLatestSeason)
+                visible: !isLoading && !searchWindow.effectsMode && (searchInput.text.length > 0 || searchModel.showLatestSeason)
                 z: 10  // Above the input area MouseArea
                 
                 // MouseArea to catch clicks on badges and prevent window hide
@@ -525,6 +576,10 @@ Rectangle {
 
                 // Keyboard navigation
                 Keys.onUpPressed: {
+                    if (searchWindow.effectsMode) {
+                        effectsPanel.scrollBy(-96)
+                        return
+                    }
                     // Enable showLatestSeason when pressing arrow keys without search query
                     if (searchModel.searchQuery.length === 0 && !searchModel.showLatestSeason) {
                         searchModel.showLatestSeason = true
@@ -539,6 +594,10 @@ Rectangle {
                 }
 
                 Keys.onDownPressed: {
+                    if (searchWindow.effectsMode) {
+                        effectsPanel.scrollBy(96)
+                        return
+                    }
                     // Enable showLatestSeason when pressing arrow keys without search query
                     if (searchModel.searchQuery.length === 0 && !searchModel.showLatestSeason) {
                         searchModel.showLatestSeason = true
@@ -553,6 +612,10 @@ Rectangle {
                 }
 
                 Keys.onReturnPressed: function(event) {
+                    if (searchWindow.effectsMode) {
+                        event.accepted = true
+                        return
+                    }
                     if (resultsList.currentIndex >= 0) {
                         searchModel.openWeapon(resultsList.currentIndex)
                         searchWindow.close()
@@ -565,7 +628,13 @@ Rectangle {
                 }
 
                 Keys.onEscapePressed: function(event) {
-                    if (searchModel.searchQuery.length > 0) {
+                    if (searchWindow.effectsMode) {
+                        if (searchModel.searchQuery.length > 0) {
+                            searchModel.clearSearch()
+                        } else {
+                            searchWindow.toggleEffectsMode()
+                        }
+                    } else if (searchModel.searchQuery.length > 0) {
                         searchModel.clearSearch()
                     } else {
                         // Reset scroll position before closing
@@ -574,11 +643,14 @@ Rectangle {
                     }
                     event.accepted = true
                 }
-                
-                // F5 to reload weapon list
+
+                // F5 to reload weapon list, F2 to toggle Active Effects
                 Keys.onPressed: function(event) {
                     if (event.key === Qt.Key_F5) {
                         weaponLoader.reload()
+                        event.accepted = true
+                    } else if (event.key === Qt.Key_F2) {
+                        searchWindow.toggleEffectsMode()
                         event.accepted = true
                     }
                 }
@@ -589,7 +661,7 @@ Rectangle {
                 anchors.left: searchIcon.right
                 anchors.leftMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
-                text: "Search weapons..."
+                text: searchWindow.effectsMode ? "Filter active effects..." : "Search weapons..."
                 font.family: searchWindow.mainFont
                 font.pixelSize: 22
                 color: "#666666"
@@ -624,7 +696,7 @@ Rectangle {
             id: sourceFilterBar
             Layout.fillWidth: true
             Layout.preferredHeight: 36
-            visible: searchModel.activeSourceFilters.length > 0
+            visible: !searchWindow.effectsMode && searchModel.activeSourceFilters.length > 0
             color: "#B31a2a2a"  // Semi-transparent background (70% opacity)
             radius: 8
             clip: true
@@ -707,6 +779,16 @@ Rectangle {
             }
         }
 
+        // Active Effects reference panel
+        ActiveEffectsPanel {
+            id: effectsPanel
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: searchWindow.effectsMode
+            fontFamily: searchWindow.mainFont
+            filter: searchWindow.effectsMode ? searchInput.text : ""
+        }
+
         // Results list
         ListView {
             id: resultsList
@@ -716,7 +798,7 @@ Rectangle {
             spacing: 6
             model: searchModel
             currentIndex: -1
-            visible: !isLoading
+            visible: !isLoading && !searchWindow.effectsMode
             
             // Auto-select first item when list is populated
             onCountChanged: {
@@ -788,7 +870,7 @@ Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: searchWindow.noResultsHeight
             Layout.fillHeight: false
-            visible: isLoading
+            visible: isLoading && !searchWindow.effectsMode
 
             Row {
                 anchors.centerIn: parent
@@ -841,7 +923,7 @@ Rectangle {
             Layout.leftMargin: 20
             Layout.rightMargin: 20
             Layout.bottomMargin: 16
-            visible: !isLoading && resultsList.count === 0 && searchInput.text.length > 0
+            visible: !isLoading && !searchWindow.effectsMode && resultsList.count === 0 && searchInput.text.length > 0
             text: "No weapons found for \"" + searchInput.text + "\""
             font.family: searchWindow.mainFont
             font.pixelSize: 18
@@ -855,7 +937,9 @@ Rectangle {
         // Keyboard shortcut hint
         Text {
             Layout.fillWidth: true
-            text: "Alt+G to toggle • ESC to close • F5 to refresh • ↑↓ to navigate • Enter to open"
+            text: searchWindow.effectsMode
+                  ? "F2 or ESC to go back • type to filter • ↑↓ to scroll"
+                  : "Alt+G to toggle • ESC to close • F2 effects • F5 refresh • ↑↓ to navigate • Enter to open"
             font.family: searchWindow.mainFont
             font.pixelSize: 13
             color: "#999999"

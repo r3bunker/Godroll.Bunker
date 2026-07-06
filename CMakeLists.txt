@@ -69,6 +69,7 @@ qt_add_qml_module(GodrollBunker
         qml/SearchWindow.qml
         qml/WeaponItem.qml
         qml/UpdateDialog.qml
+        qml/ActiveEffectsPanel.qml
     RESOURCES
         resources/logo.svg
         resources/search-icon.svg
